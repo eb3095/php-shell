@@ -78,7 +78,16 @@ function displayShell() {
             </tr>
             <tr class="shell-command-row">
                 <td>
-                    <span id="bash" class="bash"><?php echo $_SESSION['user']."@".$_SESSION['hostname'].":<span id='cwd'>".$_SESSION['cwd']."</span>"; ?># </span><input type="text" id="exec" name="exec" class="command">
+                    <table id="exec-table">
+                        <tr>
+                            <td class="exec-host">
+                                <span id="bash" class="bash"><?php echo $_SESSION['user']."@".$_SESSION['hostname'].":<span id='cwd'>".$_SESSION['cwd']."</span>"; ?># </span>
+                            </td>
+                            <td class="exec-row">
+                                <input type="text" id="exec" name="exec" class="command">
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
         </table>
@@ -153,7 +162,7 @@ if (!isset($_POST['exec'])) {
                 .command {
                     background: none;   
                     border: none;
-                    width: calc(100% - 200px);
+                    width: 100%;
                     outline: none !important;
                 }
                 .shell-container table {
@@ -162,6 +171,15 @@ if (!isset($_POST['exec'])) {
                 }
                 .shell-command-row {
                     height: 40px;
+                }
+                .exec-host {
+                    white-space: nowrap;
+                    padding: 0px;
+                }
+                .exec-row {
+                    width: 100%;
+                    padding: 0px;
+                    padding-left: 10px;
                 }
                 .error {
                     display: block;
