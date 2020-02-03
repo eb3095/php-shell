@@ -81,7 +81,7 @@ function displayShell() {
                     <table id="exec-table">
                         <tr>
                             <td class="exec-host">
-                                <span id="bash" class="bash"><?php echo $_SESSION['user']."@".$_SESSION['hostname'].":<span id='cwd'>".$_SESSION['cwd']."</span>"; ?># </span>
+                                <span id="bash" class="bash"><?php echo $_SESSION['user']."@".$_SESSION['hostname'].":<span id='cwd'>".$_SESSION['cwd']."</span>"; ?>#</span>
                             </td>
                             <td class="exec-row">
                                 <input type="text" id="exec" name="exec" class="command">
@@ -323,7 +323,7 @@ if (isset($_SESSION['logged_in']) && !isset($_POST['exec'])) {
                         exec.value = '';
                         position = -1;
                         let shell = document.getElementById('shell');
-                        shell.innerText += document.getElementById('bash').innerText + '' + cmd + '\\n';
+                        shell.innerText += document.getElementById('bash').innerText + ' ' + cmd + '\\n';
                         let req = new XMLHttpRequest();
                         req.open('POST', '".$protocol.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']."');
                         req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
