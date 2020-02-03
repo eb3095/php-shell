@@ -69,15 +69,15 @@ function displayLogin($failed = false) {
 function displayShell() {
     ?>
     <div id ="shell-container" class="shell-container">
-        <table>
+        <table class="shell-table">
             <tr>
-                <td>
+                <td class="shell-cell">
                     <div id="shell" class="shell">
                     </div>
                 </td>
             </tr>
             <tr class="shell-command-row">
-                <td>
+                <td class="shell-cell">
                     <table id="exec-table">
                         <tr>
                             <td class="exec-host">
@@ -156,7 +156,7 @@ if (!isset($_POST['exec'])) {
                     font-family: monospace;
                     color: white;
                 }
-                .shell-container table td {
+                .shell-table .shell-cell {
                     padding: 10px;
                 }
                 .command {
@@ -165,7 +165,7 @@ if (!isset($_POST['exec'])) {
                     width: 100%;
                     outline: none !important;
                 }
-                .shell-container table {
+                .shell-table {
                     width: 100%;
                     height: 100%;
                 }
@@ -179,7 +179,7 @@ if (!isset($_POST['exec'])) {
                 .exec-row {
                     width: 100%;
                     padding: 0px;
-                    padding-left: 10px;
+                    padding-left: 5px;
                 }
                 .error {
                     display: block;
