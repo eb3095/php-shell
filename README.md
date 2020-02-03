@@ -52,3 +52,7 @@ The defaults are,
 * Password: pass
 
 The username and password are both hashed via sha512 and set in the file directly.
+
+### Screenshot
+
+![Screenshot](https://github.com/eb3095/php-shell/raw/master/screenshot.png)
