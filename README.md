@@ -43,3 +43,12 @@ cd /home
 ```
 
 This will be executed as an internal command setting the PHP cwd and it is permanent (until refresh).
+
+### Credentials
+
+The defaults are,
+
+Username: user
+Password: pass
+
+The username and password are both hashed via sha512 and set in the file directly.
