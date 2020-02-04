@@ -29,7 +29,7 @@ History is not saved across sessions and is stored locally in the browser for th
 * exit: Log out
 * cd: Change directory
 * cls: Clear the screen
-* rshell: "rshell IP PORT" open a remote shell to the specific address
+* rshell: "rshell IP PORT" open a remote shell to the specified address
 * upload: Showns a file prompt then uploads the file to the current directory
 
 cd is unique here. If you do the following,
