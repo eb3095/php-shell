@@ -98,12 +98,29 @@ function upload() {
     }
 }
 
+// File download
+function download() {
+    $_POST['download'] = base64_decode($_POST['download']);
+    if (strpos("x".$_POST['download'],"/") !== 0 || strpos("x".$_POST['download'],"\\") !== 0) {
+        $file = $_POST['download'];
+    } else {
+        $target = $_SESSION['cwdlong'];
+        $file = $target . DIRECTORY_SEPARATOR . $_POST['download'];
+    }
+    if (!file_exists($file)) {
+        echo '{"lines": ["' . base64_encode("File does not exist: " . $file) . '"]}';
+        return;
+    }
+    $data = file_get_contents($file);
+    echo '{"file": "' . base64_encode($data) . '", "filename": "'.basename($file).'"}';
+}
+
 
 //
 // Program
 //
 
-if (!isset($_POST['exec']) && !isset($_FILES['file'])) {
+if (!isset($_POST['exec']) && !isset($_FILES['file']) && !isset($_POST['download'])) {
     head();
     css();
 }
@@ -128,7 +145,9 @@ if (!isset($_SESSION['logged_in']) && isset($_POST['exec'])) {
 } else if ($_SESSION['logged_in'] && isset($_POST['logout'])) {
     unset($_SESSION['logged_in']);
     displayLogin();
-} else if ($_SESSION['logged_in'] && isset($_FILES['file'])) {
+} else if ($_SESSION['logged_in'] && isset($_POST['download'])) {
+    download();
+}  else if ($_SESSION['logged_in'] && isset($_FILES['file'])) {
     upload();
 } else if ($_SESSION['logged_in'] && !isset($_POST['exec'])) {
     $_SESSION['cwd'] = getDir(getcwd());
@@ -141,12 +160,12 @@ if (!isset($_SESSION['logged_in']) && isset($_POST['exec'])) {
 }
 
 // Dont include if the user is not logged in. Also dont include if an api call
-if (isset($_SESSION['logged_in']) && !isset($_POST['exec']) && !isset($_FILES['file'])) {
+if (isset($_SESSION['logged_in']) && !isset($_POST['exec']) && !isset($_FILES['file']) && !isset($_POST['download'])) {
     javascript();
 }
 
 // Dont include if this is an api call
-if (!isset($_POST['exec']) && !isset($_FILES['file'])) {
+if (!isset($_POST['exec']) && !isset($_FILES['file']) && !isset($_POST['download'])) {
     echo "  </body>
           </html>";
 }
@@ -422,6 +441,62 @@ function javascript() {
                             exec.value = '';
                             return;
                         }
+                        if (cmd.startsWith('download ')) {
+                            let file = cmd.substring(9, cmd.length);
+                            cmdhistory.push(exec.value);
+                            position = -1;
+                            let shell = document.getElementById('shell');
+                            addBashSim(shell, exec.value);
+                            exec.value = '';
+                            let req = new XMLHttpRequest();
+                            req.open('POST', '" . $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "');
+                            req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                            req.addEventListener('load', function() {
+                                if (req.readyState === req.DONE) {
+                                    if (req.status === 200) {
+                                        let response = JSON.parse(req.responseText);
+                                        if (response.lines) {
+                                            response.lines.forEach(line => {
+                                                let elem = document.createElement('span');                                            
+                                                elem.innerText = atob(line);
+                                                shell.appendChild(elem);
+                                                shell.innerHTML += '<br>';
+                                            });
+                                            shell.scrollTop = shell.scrollHeight;
+                                        } else if (response.file) {
+                                            let link = document.createElement('a');
+                                            link.href = 'data:application/octet-stream;charset=utf-8;base64,' + response.file;
+                                            link.setAttribute('download', response.filename);
+                                            link.click();
+                                        } else {
+                                            let elem = document.createElement('span');                                            
+                                            elem.innerText = 'ERROR: No file or output returned!';
+                                            shell.appendChild(elem);
+                                            shell.innerHTML += '<br>';                                    
+                                        }
+                                    } else {
+                                        let elem = document.createElement('span');                                            
+                                        elem.innerText = 'ERROR: ' + req.status + ': ' + req.statusText;
+                                        shell.appendChild(elem);
+                                        shell.innerHTML += '<br>';                                    
+                                    }
+                                }
+                            });
+                            req.ontimeout = function () {
+                                let elem = document.createElement('span');                                            
+                                elem.innerText = 'ERROR: Timeout';
+                                shell.appendChild(elem);
+                                shell.innerHTML += '<br>';
+                             };
+                            req.onerror = function () {
+                                let elem = document.createElement('span');                                            
+                                elem.innerText = 'ERROR: Failed to connect';
+                                shell.appendChild(elem);
+                                shell.innerHTML += '<br>';
+                            };
+                            req.send('download=' + btoa(file));
+                            return;
+                        }
                         if (cmd === 'upload') {
                             cmdhistory.push(exec.value);
                             position = -1;
@@ -441,7 +516,6 @@ function javascript() {
                                 req.addEventListener('load', function() {
                                     if (req.readyState === req.DONE) {
                                         if (req.status === 200) {
-                                            console.log(req.responseText);
                                             let response = JSON.parse(req.responseText);
                                             if (response.lines) {
                                                 response.lines.forEach(line => {

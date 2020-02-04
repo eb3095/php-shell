@@ -30,7 +30,8 @@ History is not saved across sessions and is stored locally in the browser for th
 * cd: Change directory
 * cls: Clear the screen
 * rshell: "rshell IP PORT" open a remote shell to the specified address
-* upload: Showns a file prompt then uploads the file to the current directory
+* upload: Shows a file prompt then uploads the file to the current directory
+* download: Download a file either relative path or full. "download FILE"
 
 cd is unique here. If you do the following,
 
